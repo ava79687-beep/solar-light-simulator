@@ -1,112 +1,114 @@
 import streamlit as st
 import plotly.graph_objects as go
 
-# 1. 全局配置：深色主题 + 白色字体
+# 全局配置：深色主题 + 白色字体
 st.set_page_config(page_title="太阳能路灯配置对比模拟器", layout="wide")
 st.markdown("""
     <style>
-    /* 全局背景和字体 */
-    .stApp {
-        background-color: #1a1a1a;
-        color: white;
-    }
-    /* 所有文本元素强制白色 */
-    h1, h2, h3, h4, h5, h6, p, span, label, .stMarkdown, .stMetric, .stSlider, .stButton {
-        color: white !important;
-    }
-    /* 按钮样式 */
+    .stApp {background-color: #1a1a1a; color: white;}
+    h1, h2, h3, h4, p, span, label, .stMarkdown, .stMetric, .stSlider, .stButton {color: white !important;}
     .stButton>button {
-        background-color: #3a3f58;
-        color: white !important;
-        border-radius: 8px;
-        padding: 10px 24px;
-        font-size: 16px;
-        border: none;
-        width: 100%;
+        background-color: #3a3f58; color: white !important; border-radius: 8px;
+        padding: 10px 24px; font-size: 16px; border: none; width: 100%;
     }
-    .stButton>button:hover {
-        background-color: #4a517a;
-    }
-    /* 滑块样式 */
-    .stSlider>div>div>div {
-        background-color: #4169e1;
-    }
-    /* 信息卡片 */
-    .info-card {
-        background-color: #2d2d2d;
-        padding: 15px;
-        border-radius: 10px;
-        margin: 10px 0;
-    }
+    .stButton>button:hover {background-color: #4a517a;}
+    .stSlider>div>div>div {background-color: #4169e1;}
+    .info-card {background-color: #2d2d2d; padding: 15px; border-radius: 10px; margin: 10px 0;}
+    .formula-box {background-color: #f0f0f0; color: black !important; padding: 15px; border-radius: 8px;}
     </style>
 """, unsafe_allow_html=True)
 
 # 标题
 st.title("太阳能路灯配置对比模拟器")
 
-# ------------------- 方案定义 -------------------
-# 每个方案包含：功率数据、耗电量、说明、计算公式
+# ------------------- 按你的标书定义3个方案 -------------------
 schemes = {
-    "方案一：高性能": {
-        "power": [100, 100, 100, 100, 100, 100, 30, 30, 30, 30, 30, 30],
-        "wh": 78,
-        "desc": "前6小时100%高亮，后6小时30%亮度，优先保证前半夜照明效果",
+    "方案一：卡线中标型（高性价比）": {
+        "power": [100,100, 50,50,50,50, 20,20,20,20,20,20],
+        "wh": 440,
+        "desc": "主打价格优势，参数刚好跨过标书门槛，利用智能时控+雷达感应确保12小时亮灯。",
         "formula": """
-        **日耗电量计算：**
-        (100% × 6h + 30% × 6h) × 10W = (6 + 1.8) × 10W = 78 Wh
+        **1. 每日耗电量计算：**  
+        (80W × 2h) + (40W × 4h) + (20W × 6h) = 160 + 160 + 120 = **440 Wh/天**  
+
+        **2. 电池容量计算：**  
+        440Wh ÷ 0.9（放电深度） = 488 Wh → 采用 12.8V 42Ah 磷酸铁锂电池（537Wh）
+
+        **3. 太阳能板计算：**  
+        440Wh ÷ (5h有效日照 × 0.8充电效率) = 110 Wp → 采用 110Wp 太阳能板  
+
+        ✅ 最终配置：80W灯头 + 110Wp板 + 12.8V 42Ah电池
         """
     },
-    "方案二：最优推荐": {
-        "power": [90, 90, 90, 90, 40, 40, 40, 40, 40, 40, 40, 40],
-        "wh": 66,
-        "desc": "前4小时90%高亮，后8小时40%亮度，兼顾亮度与续航平衡",
+    "方案二：最优推荐型（平衡成本与可靠性）": {
+        "power": [100,100,100,100, 50,50,50,50, 30,30,30,30],
+        "wh": 576,
+        "desc": "造价不高，但提供更长亮灯冗余和更高平均亮度，能抵抗1-2天阴雨天，适合难民营治安环境。",
         "formula": """
-        **日耗电量计算：**
-        (90% × 4h + 40% × 8h) × 10W = (3.6 + 3.2) × 10W = 68 Wh
+        **1. 每日耗电量计算：**  
+        (80W × 4h) + (40W × 4h) + (24W × 4h) = 320 + 160 + 96 = **576 Wh/天**  
+
+        **2. 电池容量计算：**  
+        576Wh ÷ 0.9 = 640 Wh → 放大到768Wh（1.5天阴雨天续航）→ 12.8V 60Ah电池
+
+        **3. 太阳能板计算：**  
+        576Wh ÷ (5h × 0.8) = 144 Wp → 取整 150Wp  
+
+        ✅ 最终配置：80W灯头 + 150Wp板 + 12.8V 60Ah电池
         """
     },
-    "方案三：最高性能": {
-        "power": [80, 80, 80, 80, 80, 80, 40, 40, 40, 40, 40, 40],
-        "wh": 72,
-        "desc": "前6小时持续80%高亮，后6小时维持40%亮度，整体输出均匀",
+    "方案三：极致性能型（无视阴雨天）": {
+        "power": [80,80,80,80,80,80, 40,40,40,40,40,40],
+        "wh": 576,
+        "desc": "二体式首选，支持2-3个连续阴雨天100%亮灯，适合预算充足或要求严苛的项目。",
         "formula": """
-        **日耗电量计算：**
-        (80% × 6h + 40% × 6h) × 10W = (4.8 + 2.4) × 10W = 72 Wh
+        **1. 每日耗电量计算：**  
+        (64W × 6h) + (32W × 6h) = 384 + 192 = **576 Wh/天**  
+
+        **2. 电池容量计算（2天续航）：**  
+        (576Wh × 2天) ÷ 0.9 = 1280 Wh → 12.8V 100Ah电池
+
+        **3. 太阳能板计算：**  
+        需同时补充当日用电+亏空，建议 200Wp 太阳能板  
+
+        ✅ 最终配置：80W灯头 + 200Wp板 + 12.8V 100Ah电池（二体式推荐）
         """
     }
 }
 
-# ------------------- 方案切换 -------------------
+# ------------------- 方案切换按钮 -------------------
 col1, col2, col3 = st.columns(3)
 with col1:
-    btn1 = st.button("方案一：高性能", key="btn1")
+    btn1 = st.button("方案一：卡线中标型", key="btn1")
 with col2:
-    btn2 = st.button("方案二：最优推荐", key="btn2")
+    btn2 = st.button("方案二：最优推荐型", key="btn2")
 with col3:
-    btn3 = st.button("方案三：最高性能", key="btn3")
+    btn3 = st.button("方案三：极致性能型", key="btn3")
 
 # 默认选中方案三
 if not (btn1 or btn2 or btn3):
-    selected = "方案三：最高性能"
+    selected = "方案三：极致性能型（无视阴雨天）"
 elif btn1:
-    selected = "方案一：高性能"
+    selected = "方案一：卡线中标型（高性价比）"
 elif btn2:
-    selected = "方案二：最优推荐"
+    selected = "方案二：最优推荐型（平衡成本与可靠性）"
 else:
-    selected = "方案三：最高性能"
+    selected = "方案三：极致性能型（无视阴雨天）"
 
-# ------------------- 显示方案信息和公式 -------------------
+# ------------------- 显示方案信息 -------------------
 st.markdown(f"""
 <div class="info-card">
-    <h4>当前方案：{selected} | 预估日耗电量：{schemes[selected]['wh']} Wh</h4>
+    <h3>当前方案：{selected} | 预估日耗电量：{schemes[selected]['wh']} Wh</h3>
 </div>
 """, unsafe_allow_html=True)
 
-# 显示计算公式
+# 显示完整计算公式和配置
 st.markdown(f"""
 <div class="info-card">
-    <h4 style="color: #a9bfff;">📐 耗电量计算公式</h4>
-    {schemes[selected]['formula']}
+    <h4 style="color: #a9bfff;">📐 耗电量 & 配置计算过程</h4>
+    <div class="formula-box">
+        {schemes[selected]['formula']}
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
