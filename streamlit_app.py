@@ -30,6 +30,14 @@ with col2:
 with col3:
     total_light_h = st.number_input("照明总时长 (h)", min_value=4, max_value=14, value=10, step=1)
 
+# ✅ 新增：实时计算并显示电池总容量（Wh）
+batt_total_wh = batt_ah * batt_volt
+st.markdown(f"""
+<div class="result-box" style="padding:10px 15px;">
+<b>🔋 电池总容量：</b> {batt_ah}Ah × {batt_volt}V = <b>{batt_total_wh:.1f} Wh</b>
+</div>
+""", unsafe_allow_html=True)
+
 st.markdown("---")
 
 # ===================== 智能调光模式设置 =====================
@@ -75,7 +83,6 @@ p2_real = lamp_power * t2_pct / 100
 p3_real = lamp_power * t3_pct / 100
 daily_consume_wh = p1_real * t1_h + p2_real * t2_h + p3_real * t3_h
 
-batt_total_wh = batt_ah * batt_volt
 batt_usable_wh = batt_total_wh * dod_limit
 panel_daily_charge_wh = panel_wp * sun_hour * charge_eff
 actual_backup_days = batt_usable_wh / daily_consume_wh
@@ -107,7 +114,7 @@ st.plotly_chart(fig, use_container_width=True)
 
 st.markdown("---")
 
-# ===================== 电池续航 vs 充电对比图（已添加） =====================
+# ===================== 电池续航 vs 充电对比图 =====================
 st.subheader("⚖️ 电池续航与充电对比图")
 compare_labels = ["日耗电量", "日充电量", "阴雨天所需电池", "现有可用电池"]
 compare_values = [daily_consume_wh, panel_daily_charge_wh, need_batt_wh, batt_usable_wh]
@@ -168,7 +175,7 @@ report = f"""
 
 一、基础参数
 - 灯具功率：{lamp_power}W
-- 电池：{batt_volt}V {batt_ah}Ah
+- 电池：{batt_volt}V {batt_ah}Ah （总容量：{batt_total_wh:.1f}Wh）
 - 太阳能板：{panel_wp}Wp
 - 照明总时长：{total_light_h}小时
 - 应用地区：{area_type}
@@ -206,7 +213,7 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# 一键下载 TXT 报告（替代PDF，无需额外库）
+# 一键下载 TXT 报告
 st.download_button(
     label="下载报告（TXT文件）",
     data=report,
