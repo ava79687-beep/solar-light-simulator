@@ -1,7 +1,9 @@
 import streamlit as st
 import plotly.graph_objects as go
+from fpdf import FPDF
+import tempfile
 
-# ===================== 深色主题 + 白色字体 =====================
+# ===================== 深色主题样式 =====================
 st.set_page_config(page_title="太阳能路灯专业配置计算器", layout="wide")
 st.markdown("""
 <style>
@@ -107,6 +109,21 @@ st.plotly_chart(fig, use_container_width=True)
 
 st.markdown("---")
 
+# ===================== 【新增1】电池续航 vs 充电对比图 =====================
+st.subheader("⚖️ 电池续航与充电对比图")
+compare_labels = ["日耗电量", "日充电量", "阴雨天所需电池", "现有可用电池"]
+compare_values = [daily_consume_wh, panel_daily_charge_wh, need_batt_wh, batt_usable_wh]
+colors = ["#ff4c4c", "#4cff4c", "#ffb34c", "#4c84ff"]
+
+fig2 = go.Figure(go.Bar(x=compare_labels, y=compare_values, marker_color=colors))
+fig2.update_layout(
+    plot_bgcolor="#121212", paper_bgcolor="#121212", font=dict(color="white"),
+    yaxis_title="Wh (瓦时)", height=380
+)
+st.plotly_chart(fig2, use_container_width=True)
+
+st.markdown("---")
+
 # ===================== 实时计算结果 =====================
 st.markdown(f"""
 <div class="result-box">
@@ -147,7 +164,7 @@ st.markdown(f"""
 
 st.markdown("---")
 
-# ===================== 标书专用正式报告（修复版） =====================
+# ===================== 标书报告 =====================
 report = f"""
 太阳能路灯配置测算报告
 
@@ -183,7 +200,7 @@ elif panel_daily_charge_wh >= daily_consume_wh:
 else:
     report += f"❌ 需升级：太阳能板≥{need_panel_whp:.0f}Wp + 电池≥{need_batt_ah:.0f}Ah"
 
-# 修复点：用Markdown渲染报告，保证深色背景+白色文字
+# 显示报告
 st.subheader("标书专用正式报告")
 st.markdown(f"""
 <div class="report-box">
@@ -191,10 +208,29 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# 一键下载报告
-st.download_button(
-    label="下载报告（TXT文件）",
-    data=report,
-    file_name="太阳能路灯配置测算报告.txt",
-    mime="text/plain"
-)
+# ===================== 【新增2】一键生成 PDF 报告 =====================
+st.subheader("📄 导出正式标书报告")
+def create_pdf(report_content):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+    pdf.multi_cell(0, 10, report_content)
+    
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
+    pdf.output(tmp.name)
+    return tmp.name
+
+try:
+    pdf_path = create_pdf(report)
+    with open(pdf_path, "rb") as f:
+        st.download_button(
+            label="下载 PDF 格式标书报告",
+            data=f,
+            file_name="太阳能路灯配置报告.pdf",
+            mime="application/pdf"
+        )
+except:
+    st.download_button("下载TXT报告", report, file_name="太阳能配置报告.txt", mime="text/plain")
+
+st.markdown("---")
+st.success("✅ 所有参数、图表、报告已自动更新完成！")
