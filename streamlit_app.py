@@ -1,126 +1,167 @@
 import streamlit as st
-import pandas as pd
-import numpy as np
 import plotly.graph_objects as go
+import pandas as pd
 
-# 设置页面配置
-st.set_page_config(
-    page_title="太阳能路灯智能模拟器",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
-# 强制深色模式样式
+# 页面整体设置：深色主题
+st.set_page_config(page_title="太阳能路灯模拟器", layout="wide")
 st.markdown("""
     <style>
-    .main {
-        background-color: #0e1117;
-        color: #ffffff;
+    body {background-color: #1a1a1a; color: white;}
+    .stApp {background-color: #1a1a1a;}
+    .css-18e3th9 {padding-top: 2rem;}
+    .stButton>button {
+        background-color: #3a3f58; color: white; border-radius: 8px;
+        padding: 10px 24px; font-size: 16px; border: none;
     }
-    .stSlider [data-baseweb="slider"] {
-        width: 90%;
-    }
+    .stButton>button:hover {background-color: #4a517a;}
+    .stSlider>div>div>div {background-color: #4169e1;}
     </style>
-    """, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
-def main():
-    st.title("🌙 太阳能路灯系统模拟器")
-    st.sidebar.header("⚙️ 系统参数配置")
+# 标题
+st.title("太阳能路灯配置对比模拟器")
 
-    # --- 侧边栏控制 ---
-    preset = st.sidebar.selectbox(
-        "选择照明方案",
-        ["标准节能模式", "全功率模式", "极低功耗模式"]
-    )
-
-    # 根据方案调整初始值
-    defaults = {
-        "标准节能模式": (60, 100, 10),
-        "全功率模式": (100, 200, 12),
-        "极低功耗模式": (30, 80, 8)
+# 定义三种方案数据
+schemes = {
+    "方案一：高性价比": {
+        "power": [100, 100, 100, 30, 30, 30, 30, 30, 30, 30, 30, 30],
+        "wh": 384,
+        "desc": "前3小时100%高亮，后9小时30%低功耗，优先保证亮灯时长"
+    },
+    "方案二：最优推荐": {
+        "power": [90, 90, 90, 90, 40, 40, 40, 40, 40, 40, 40, 40],
+        "wh": 480,
+        "desc": "前4小时90%高亮，后8小时40%亮度，兼顾亮度与续航"
+    },
+    "方案三：极致性能": {
+        "power": [80, 80, 80, 80, 80, 80, 40, 40, 40, 40, 40, 40],
+        "wh": 576,
+        "desc": "前6小时持续80%高亮，后6小时维持40%亮度，整体输出均匀"
     }
-    d_p, d_b, d_h = defaults[preset]
+}
 
-    led_power = st.sidebar.slider("LED 额定功率 (W)", 10, 300, d_p)
-    battery_cap = st.sidebar.slider("电池容量 (Ah)", 20, 500, d_b)
-    working_hours = st.sidebar.slider("每日工作时长 (h)", 4, 15, d_h)
-    
-    st.sidebar.markdown("---")
-    st.sidebar.subheader("🔋 电池环境参数")
-    env_temp = st.sidebar.slider("环境平均温度 (°C)", -20, 50, 25)
-    dod = st.sidebar.slider("放电深度 (DoD %)", 10, 90, 80)
+# 方案切换按钮
+col1, col2, col3 = st.columns(3)
+with col1:
+    btn1 = st.button("方案一：高性价比", key="btn1")
+with col2:
+    btn2 = st.button("方案二：最优推荐", key="btn2")
+with col3:
+    btn3 = st.button("方案三：极致性能", key="btn3")
 
-    # --- 核心逻辑计算 ---
-    # 模拟功率损耗与转化
-    system_voltage = 12.8  # 磷酸铁锂标准电压
-    daily_consumption = (led_power * working_hours) / system_voltage # Ah
-    days_autonomy = battery_cap * (dod / 100) / daily_consumption
+# 默认选方案三
+if not (btn1 or btn2 or btn3):
+    selected = "方案三：极致性能"
+elif btn1:
+    selected = "方案一：高性价比"
+elif btn2:
+    selected = "方案二：最优推荐"
+else:
+    selected = "方案三：极致性能"
 
-    # 电池寿命模拟 (简易阿伦尼乌斯模型)
-    # 基础循环次数 2000次，温度每升高10度寿命减半
-    base_cycles = 2500 if dod < 50 else 2000
-    temp_factor = 2 ** ((env_temp - 25) / 10) if env_temp > 25 else 1.0
-    estimated_years = (base_cycles / temp_factor) / 365
+# 显示当前方案和耗电量
+st.markdown(f"""
+<div style="background-color: #2d2d2d; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+    <h4>当前方案：{selected} | 预估日耗电量：{schemes[selected]['wh']} Wh</h4>
+</div>
+""", unsafe_allow_html=True)
 
-    # --- 界面展示 ---
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("每日耗电量", f"{daily_consumption:.1f} Ah")
-    col2.metric("阴雨天维持天数", f"{days_autonomy:.1f} 天")
-    col3.metric("预计电池寿命", f"{estimated_years:.1f} 年")
-    col4.metric("系统电压", f"{system_voltage} V")
+# 12小时功率柱状图
+hours = [f"第{i}小时" for i in range(1,13)]
+power_data = schemes[selected]["power"]
 
-    # --- 图表：24小时功率变化 ---
-    st.subheader("📊 24小时实时功率模拟")
-    
-    hours = np.arange(24)
-    # 模拟太阳能充电功率曲线 (正弦波)
-    charge_power = np.where((hours > 6) & (hours < 18), 
-                           (led_power * 1.5) * np.sin(np.pi * (hours - 6) / 12), 0)
-    # 模拟路灯负载功率曲线
-    load_power = np.where((hours >= 18) | (hours <= 18 - working_hours if 18-working_hours >=0 else 0), 
-                          0, led_power)
-    # 处理跨天逻辑
-    load_power = np.zeros(24)
-    for h in range(24):
-        if h >= 18 or h < (18 + working_hours) % 24:
-            if h >= 18 or h < (18 + working_hours - 24):
-                load_power[h] = led_power
-
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=hours, y=charge_power, name='光伏充电功率 (W)', line=dict(color='#FFA500', width=3)))
-    fig.add_trace(go.Scatter(x=hours, y=load_power, name='路灯负载功率 (W)', line=dict(color='#00BFFF', width=3), fill='tozeroy'))
-    
-    fig.update_layout(
-        template="plotly_dark",
-        xaxis_title="时间 (24小时制)",
-        yaxis_title="功率 (W)",
-        margin=dict(l=20, r=20, t=20, b=20),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+fig = go.Figure(data=[
+    go.Bar(
+        x=hours,
+        y=power_data,
+        marker_color="#a9bfff",
+        text=[f"{p}%" for p in power_data],
+        textposition="outside"
     )
-    st.plotly_chart(fig, use_container_width=True)
+])
 
-    # --- 下方详情 ---
-    c1, c2 = st.columns(2)
-    with c1:
-        st.subheader("📋 仿真原始数据")
-        df = pd.DataFrame({
-            "时间 (时)": hours,
-            "充电功率 (W)": charge_power.round(1),
-            "负载功率 (W)": load_power.round(1)
-        })
-        st.dataframe(df, height=300, use_container_width=True)
-    
-    with c2:
-        st.subheader("💡 系统建议")
-        if days_autonomy < 3:
-            st.warning("⚠️ 当前配置下，阴雨天储备不足，建议增大电池容量或降低功率。")
-        else:
-            st.success("✅ 系统配置稳健，能够应对连续3天的阴雨天气。")
-            
-        if env_temp > 40:
-            st.error("🔥 环境温度过高，电池寿命将大幅缩减，请考虑增加散热或埋地处理。")
-        
-        st.info(f"配置摘要：该系统在 {dod}% 放电深度下，每日需补能约 {daily_consumption * system_voltage / 1000:.2f} kWh。")
+fig.update_layout(
+    title="输出功率(%)",
+    yaxis=dict(range=[0, 100], tickvals=[0,20,40,60,80,100], color="white"),
+    xaxis=dict(color="white"),
+    plot_bgcolor="#1a1a1a",
+    paper_bgcolor="#1a1a1a",
+    font_color="white",
+    title_font_color="white",
+    bargap=0.2
+)
 
-if __name__ == "__main__":
-    main()
+st.plotly_chart(fig, use_container_width=True)
+
+# 方案逻辑说明
+st.markdown(f"""
+<div style="background-color: #2d2d2d; padding: 15px; border-radius: 10px; margin-bottom: 30px;">
+    <h4 style="color: #a9bfff;">运行策略逻辑 - {selected.split("：")[1]}</h4>
+    <p>{schemes[selected]['desc']}</p>
+</div>
+""", unsafe_allow_html=True)
+
+# ---------------- 电池寿命模拟器 ----------------
+st.title("LiFePO4 电池寿命分析器")
+
+# 放电深度滑块
+dod = st.slider("放电深度 (DoD %)", min_value=0, max_value=100, value=77)
+soc = 100 - dod
+
+# 循环寿命估算（按磷酸铁锂标准曲线）
+if dod <= 20:
+    cycle = 12000
+elif dod <= 40:
+    cycle = 10000 - (dod-20)*200
+elif dod <= 60:
+    cycle = 6000 - (dod-40)*100
+elif dod <= 80:
+    cycle = 4000 - (dod-60)*70
+else:
+    cycle = 2600 - (dod-80)*30
+cycle = max(cycle, 2000)
+
+# 电池状态显示
+col1, col2, col3 = st.columns(3)
+col1.metric("已放电", f"{dod}%")
+col2.metric("剩余电量", f"{soc}%")
+col3.metric("预估循环寿命", f"{cycle} 次")
+
+# 寿命曲线
+dod_list = list(range(0,101,20))
+cycle_list = []
+for d in dod_list:
+    if d <= 20:
+        c = 12000
+    elif d <= 40:
+        c = 10000 - (d-20)*200
+    elif d <= 60:
+        c = 6000 - (d-40)*100
+    elif d <= 80:
+        c = 4000 - (d-60)*70
+    else:
+        c = 2600 - (d-80)*30
+    cycle_list.append(max(c, 2000))
+
+battery_fig = go.Figure(data=[
+    go.Scatter(
+        x=dod_list,
+        y=cycle_list,
+        mode="lines+markers",
+        line=dict(color="#a9bfff", width=3),
+        fill='tozeroy',
+        fillcolor="rgba(169, 191, 255, 0.2)"
+    )
+])
+
+battery_fig.update_layout(
+    title="循环寿命 (次)",
+    yaxis=dict(color="white"),
+    xaxis=dict(title="放电深度 DoD (%)", color="white"),
+    plot_bgcolor="#1a1a1a",
+    paper_bgcolor="#1a1a1a",
+    font_color="white",
+    title_font_color="white"
+)
+
+st.plotly_chart(battery_fig, use_container_width=True)
