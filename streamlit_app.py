@@ -1,72 +1,116 @@
 import streamlit as st
 import plotly.graph_objects as go
-import pandas as pd
 
-# 页面整体设置：深色主题
-st.set_page_config(page_title="太阳能路灯模拟器", layout="wide")
+# 1. 全局配置：深色主题 + 白色字体
+st.set_page_config(page_title="太阳能路灯配置对比模拟器", layout="wide")
 st.markdown("""
     <style>
-    body {background-color: #1a1a1a; color: white;}
-    .stApp {background-color: #1a1a1a;}
-    .css-18e3th9 {padding-top: 2rem;}
-    .stButton>button {
-        background-color: #3a3f58; color: white; border-radius: 8px;
-        padding: 10px 24px; font-size: 16px; border: none;
+    /* 全局背景和字体 */
+    .stApp {
+        background-color: #1a1a1a;
+        color: white;
     }
-    .stButton>button:hover {background-color: #4a517a;}
-    .stSlider>div>div>div {background-color: #4169e1;}
+    /* 所有文本元素强制白色 */
+    h1, h2, h3, h4, h5, h6, p, span, label, .stMarkdown, .stMetric, .stSlider, .stButton {
+        color: white !important;
+    }
+    /* 按钮样式 */
+    .stButton>button {
+        background-color: #3a3f58;
+        color: white !important;
+        border-radius: 8px;
+        padding: 10px 24px;
+        font-size: 16px;
+        border: none;
+        width: 100%;
+    }
+    .stButton>button:hover {
+        background-color: #4a517a;
+    }
+    /* 滑块样式 */
+    .stSlider>div>div>div {
+        background-color: #4169e1;
+    }
+    /* 信息卡片 */
+    .info-card {
+        background-color: #2d2d2d;
+        padding: 15px;
+        border-radius: 10px;
+        margin: 10px 0;
+    }
     </style>
 """, unsafe_allow_html=True)
 
 # 标题
 st.title("太阳能路灯配置对比模拟器")
 
-# 定义三种方案数据
+# ------------------- 方案定义 -------------------
+# 每个方案包含：功率数据、耗电量、说明、计算公式
 schemes = {
-    "方案一：高性价比": {
-        "power": [100, 100, 100, 30, 30, 30, 30, 30, 30, 30, 30, 30],
-        "wh": 384,
-        "desc": "前3小时100%高亮，后9小时30%低功耗，优先保证亮灯时长"
+    "方案一：高性能": {
+        "power": [100, 100, 100, 100, 100, 100, 30, 30, 30, 30, 30, 30],
+        "wh": 78,
+        "desc": "前6小时100%高亮，后6小时30%亮度，优先保证前半夜照明效果",
+        "formula": """
+        **日耗电量计算：**
+        (100% × 6h + 30% × 6h) × 10W = (6 + 1.8) × 10W = 78 Wh
+        """
     },
     "方案二：最优推荐": {
         "power": [90, 90, 90, 90, 40, 40, 40, 40, 40, 40, 40, 40],
-        "wh": 480,
-        "desc": "前4小时90%高亮，后8小时40%亮度，兼顾亮度与续航"
+        "wh": 66,
+        "desc": "前4小时90%高亮，后8小时40%亮度，兼顾亮度与续航平衡",
+        "formula": """
+        **日耗电量计算：**
+        (90% × 4h + 40% × 8h) × 10W = (3.6 + 3.2) × 10W = 68 Wh
+        """
     },
-    "方案三：极致性能": {
+    "方案三：最高性能": {
         "power": [80, 80, 80, 80, 80, 80, 40, 40, 40, 40, 40, 40],
-        "wh": 576,
-        "desc": "前6小时持续80%高亮，后6小时维持40%亮度，整体输出均匀"
+        "wh": 72,
+        "desc": "前6小时持续80%高亮，后6小时维持40%亮度，整体输出均匀",
+        "formula": """
+        **日耗电量计算：**
+        (80% × 6h + 40% × 6h) × 10W = (4.8 + 2.4) × 10W = 72 Wh
+        """
     }
 }
 
-# 方案切换按钮
+# ------------------- 方案切换 -------------------
 col1, col2, col3 = st.columns(3)
 with col1:
-    btn1 = st.button("方案一：高性价比", key="btn1")
+    btn1 = st.button("方案一：高性能", key="btn1")
 with col2:
     btn2 = st.button("方案二：最优推荐", key="btn2")
 with col3:
-    btn3 = st.button("方案三：极致性能", key="btn3")
+    btn3 = st.button("方案三：最高性能", key="btn3")
 
-# 默认选方案三
+# 默认选中方案三
 if not (btn1 or btn2 or btn3):
-    selected = "方案三：极致性能"
+    selected = "方案三：最高性能"
 elif btn1:
-    selected = "方案一：高性价比"
+    selected = "方案一：高性能"
 elif btn2:
     selected = "方案二：最优推荐"
 else:
-    selected = "方案三：极致性能"
+    selected = "方案三：最高性能"
 
-# 显示当前方案和耗电量
+# ------------------- 显示方案信息和公式 -------------------
 st.markdown(f"""
-<div style="background-color: #2d2d2d; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+<div class="info-card">
     <h4>当前方案：{selected} | 预估日耗电量：{schemes[selected]['wh']} Wh</h4>
 </div>
 """, unsafe_allow_html=True)
 
-# 12小时功率柱状图
+# 显示计算公式
+st.markdown(f"""
+<div class="info-card">
+    <h4 style="color: #a9bfff;">📐 耗电量计算公式</h4>
+    {schemes[selected]['formula']}
+</div>
+""", unsafe_allow_html=True)
+
+# ------------------- 12小时功率柱状图 -------------------
 hours = [f"第{i}小时" for i in range(1,13)]
 power_data = schemes[selected]["power"]
 
@@ -93,22 +137,22 @@ fig.update_layout(
 
 st.plotly_chart(fig, use_container_width=True)
 
-# 方案逻辑说明
+# ------------------- 运行逻辑说明 -------------------
 st.markdown(f"""
-<div style="background-color: #2d2d2d; padding: 15px; border-radius: 10px; margin-bottom: 30px;">
-    <h4 style="color: #a9bfff;">运行策略逻辑 - {selected.split("：")[1]}</h4>
+<div class="info-card">
+    <h4 style="color: #a9bfff;">运行逻辑策略 - {selected.split("：")[1]}</h4>
     <p>{schemes[selected]['desc']}</p>
 </div>
 """, unsafe_allow_html=True)
 
-# ---------------- 电池寿命模拟器 ----------------
-st.title("LiFePO4 电池寿命分析器")
+# ------------------- 电池寿命模拟器 -------------------
+st.title("LiFePO4 电池消耗分析器")
 
 # 放电深度滑块
 dod = st.slider("放电深度 (DoD %)", min_value=0, max_value=100, value=77)
 soc = 100 - dod
 
-# 循环寿命估算（按磷酸铁锂标准曲线）
+# 循环寿命估算（磷酸铁锂标准曲线）
 if dod <= 20:
     cycle = 12000
 elif dod <= 40:
@@ -123,7 +167,7 @@ cycle = max(cycle, 2000)
 
 # 电池状态显示
 col1, col2, col3 = st.columns(3)
-col1.metric("已放电", f"{dod}%")
+col1.metric("已完成放电", f"{dod}%")
 col2.metric("剩余电量", f"{soc}%")
 col3.metric("预估循环寿命", f"{cycle} 次")
 
