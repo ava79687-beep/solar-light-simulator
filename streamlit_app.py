@@ -18,7 +18,7 @@ st.markdown("""
 
 st.title("太阳能路灯专业配置计算器（商用完整版）")
 
-# ===================== 基础参数 =====================
+# ===================== 基础硬件参数 =====================
 st.subheader("基础硬件参数")
 col1, col2, col3 = st.columns(3)
 with col1:
@@ -32,7 +32,7 @@ with col3:
 
 st.markdown("---")
 
-# ===================== 智能调光 =====================
+# ===================== 智能调光模式设置 =====================
 st.subheader("智能调光模式设置")
 c1, c2, c3 = st.columns(3)
 with c1:
@@ -55,7 +55,7 @@ else:
 
 st.markdown("---")
 
-# ===================== 地区 & 效率 =====================
+# ===================== 地区 & 效率 & 阴雨天设置 =====================
 st.subheader("地区 & 效率 & 阴雨天设置")
 cc1, cc2, cc3 = st.columns(3)
 with cc1:
@@ -69,7 +69,7 @@ with cc3:
 
 st.markdown("---")
 
-# ===================== 核心计算 =====================
+# ===================== 核心自动计算 =====================
 p1_real = lamp_power * t1_pct / 100
 p2_real = lamp_power * t2_pct / 100
 p3_real = lamp_power * t3_pct / 100
@@ -84,7 +84,7 @@ need_batt_wh = daily_consume_wh * cloudy_days / dod_limit
 need_batt_ah = need_batt_wh / batt_volt
 need_panel_whp = daily_consume_wh / (sun_hour * charge_eff)
 
-# ===================== 功率曲线图 =====================
+# ===================== 智能调光功率曲线图 =====================
 st.subheader("智能调光功率曲线图")
 hours_list = []
 power_list = []
@@ -107,7 +107,7 @@ st.plotly_chart(fig, use_container_width=True)
 
 st.markdown("---")
 
-# ===================== 实时结果 =====================
+# ===================== 实时计算结果 =====================
 st.markdown(f"""
 <div class="result-box">
 <h3>实时计算结果</h3>
@@ -120,7 +120,7 @@ st.markdown(f"""
 
 st.markdown("---")
 
-# ===================== 计算公式 =====================
+# ===================== 自动计算公式 =====================
 formula_text = f"""
 ### 全套自动计算公式
 1. 分段功率：
@@ -147,7 +147,7 @@ st.markdown(f"""
 
 st.markdown("---")
 
-# ===================== 专业标书报告 =====================
+# ===================== 标书专用正式报告（修复版） =====================
 report = f"""
 太阳能路灯配置测算报告
 
@@ -175,17 +175,21 @@ report = f"""
 """
 
 if actual_backup_days >= cloudy_days and panel_daily_charge_wh >= daily_consume_wh:
-    report += "配置完全满足要求！"
+    report += "✅ 配置完全满足要求！"
 elif actual_backup_days >= cloudy_days:
-    report += f"续航足够，充电不足 → 建议太阳能板≥{need_panel_whp:.0f}Wp"
+    report += f"⚠️ 续航足够，充电不足 → 建议太阳能板≥{need_panel_whp:.0f}Wp"
 elif panel_daily_charge_wh >= daily_consume_wh:
-    report += f"充电足够，续航不足 → 建议电池≥{need_batt_ah:.0f}Ah"
+    report += f"⚠️ 充电足够，续航不足 → 建议电池≥{need_batt_ah:.0f}Ah"
 else:
-    report += f"需升级：太阳能板≥{need_panel_whp:.0f}Wp + 电池≥{need_batt_ah:.0f}Ah"
+    report += f"❌ 需升级：太阳能板≥{need_panel_whp:.0f}Wp + 电池≥{need_batt_ah:.0f}Ah"
 
-# 报告显示与下载
+# 修复点：用Markdown渲染报告，保证深色背景+白色文字
 st.subheader("标书专用正式报告")
-st.code(report, language="")
+st.markdown(f"""
+<div class="report-box">
+<pre style="white-space: pre-wrap; font-family: monospace; color: white !important;">{report}</pre>
+</div>
+""", unsafe_allow_html=True)
 
 # 一键下载报告
 st.download_button(
