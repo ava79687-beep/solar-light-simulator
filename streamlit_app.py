@@ -5,11 +5,11 @@ st.set_page_config(page_title="太阳能路灯专业配置计算器", layout="wi
 st.markdown("""
 <style>
     .stApp { background-color: #121212; color: white; }
-    h1, h2, h3, h4, h5, p, label, div, span { color: white !important; }
+    h1, h2, h3, h4, h5, p, label, div, span, pre { color: white !important; }
     .stSlider, .stNumberInput, .stSelectbox { background-color: #1e1e1e; }
     div[data-baseweb="input"], div[data-baseweb="select"] { background-color: #1e1e1e; color:white; }
     .result-box { background-color:#1e1e1e; padding:20px; border-radius:10px; margin-top:15px; }
-    .report-box { background-color:#f5f5f5; color:#000 !important; padding:20px; border-radius:10px; margin-top:15px; }
+    .report-box { background-color:#1e1e1e; color:white !important; padding:20px; border-radius:10px; margin-top:15px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -137,9 +137,9 @@ formula_text = f"""
 st.markdown(f"""
 <div class="result-box">
 <h3>📐 自动生成全套计算公式</h3>
-.formula_text
+{formula_text}
 </div>
-""".replace(".formula_text",formula_text), unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 st.markdown("---")
 
@@ -172,15 +172,15 @@ report = f"""
 if actual_backup_days >= cloudy_days and panel_daily_charge_wh >= daily_consume_wh:
     report += "✅ 现有配置满足设计要求，充电充足、阴雨天续航达标，可直接采用。"
 elif actual_backup_days >= cloudy_days and panel_daily_charge_wh < daily_consume_wh:
-    report += "⚠️ 电池续航达标，但太阳能板充电不足，长期会亏电，建议加大光伏板至 {need_panel_whp:.0f}Wp 以上。"
+    report += f"⚠️ 电池续航达标，但太阳能板充电不足，长期会亏电，建议加大光伏板至 {need_panel_whp:.0f}Wp 以上。"
 elif actual_backup_days < cloudy_days and panel_daily_charge_wh >= daily_consume_wh:
-    report += "⚠️ 充电充足，但电池容量偏小，阴雨天续航不足，建议电池升级至 {need_batt_ah:.0f}Ah 以上。"
+    report += f"⚠️ 充电充足，但电池容量偏小，阴雨天续航不足，建议电池升级至 {need_batt_ah:.0f}Ah 以上。"
 else:
-    report += "❌ 光伏板与电池均不满足设计要求，需同时加大太阳能板≥{need_panel_whp:.0f}Wp、电池≥{need_batt_ah:.0f}Ah。"
+    report += f"❌ 光伏板与电池均不满足设计要求，需同时加大太阳能板≥{need_panel_whp:.0f}Wp、电池≥{need_batt_ah:.0f}Ah。"
 
 st.markdown(f"""
 <div class="report-box">
 <h3>📄 标书专用正式报告（可直接复制使用）</h3>
-<pre style="white-space:pre-wrap;">{report}</pre>
+<pre style="white-space:pre-wrap; color:white !important;">{report}</pre>
 </div>
 """, unsafe_allow_html=True)
