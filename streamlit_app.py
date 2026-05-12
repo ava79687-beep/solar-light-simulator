@@ -16,10 +16,10 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title("🌞 太阳能路灯专业配置计算器（商用完整版）")
+st.title("太阳能路灯专业配置计算器（商用完整版）")
 
 # ===================== 基础参数 =====================
-st.subheader("📌 基础硬件参数")
+st.subheader("基础硬件参数")
 col1, col2, col3 = st.columns(3)
 with col1:
     lamp_power = st.number_input("灯具额定功率 (W)", min_value=20, max_value=200, value=80, step=5)
@@ -33,7 +33,7 @@ with col3:
 st.markdown("---")
 
 # ===================== 智能调光 =====================
-st.subheader("⚙️ 智能调光模式设置")
+st.subheader("智能调光模式设置")
 c1, c2, c3 = st.columns(3)
 with c1:
     t1_h = st.number_input("第一时段 (h)", min_value=1, max_value=14, value=2)
@@ -45,7 +45,7 @@ with c3:
     t3_h = st.number_input("第三时段 (h)", min_value=1, max_value=14, value=5)
     t3_pct = st.number_input("第三时段功率 (%)", min_value=5, max_value=50, value=20)
 
-# ===================== 【新增1】时长自动校验 =====================
+# ===================== 时长自动校验 =====================
 sum_t = t1_h + t2_h + t3_h
 st.markdown("---")
 if sum_t != total_light_h:
@@ -56,7 +56,7 @@ else:
 st.markdown("---")
 
 # ===================== 地区 & 效率 =====================
-st.subheader("🌍 地区 & 效率 & 阴雨天设置")
+st.subheader("地区 & 效率 & 阴雨天设置")
 cc1, cc2, cc3 = st.columns(3)
 with cc1:
     sun_hour = st.number_input("有效日照时长 (h)", min_value=3.0, max_value=7.0, value=5.0, step=0.1)
@@ -84,8 +84,8 @@ need_batt_wh = daily_consume_wh * cloudy_days / dod_limit
 need_batt_ah = need_batt_wh / batt_volt
 need_panel_whp = daily_consume_wh / (sun_hour * charge_eff)
 
-# ===================== 【新增2】功率曲线图 =====================
-st.subheader("📊 智能调光功率曲线图")
+# ===================== 功率曲线图 =====================
+st.subheader("智能调光功率曲线图")
 hours_list = []
 power_list = []
 for i in range(t1_h):
@@ -110,7 +110,7 @@ st.markdown("---")
 # ===================== 实时结果 =====================
 st.markdown(f"""
 <div class="result-box">
-<h3>✅ 实时计算结果</h3>
+<h3>实时计算结果</h3>
 • 日均耗电量：<b>{daily_consume_wh:.1f} Wh</b><br>
 • 电池可用容量：<b>{batt_usable_wh:.1f} Wh</b><br>
 • 太阳能日充电：<b>{panel_daily_charge_wh:.1f} Wh</b><br>
@@ -122,7 +122,7 @@ st.markdown("---")
 
 # ===================== 计算公式 =====================
 formula_text = f"""
-### 📐 全套自动计算公式
+### 全套自动计算公式
 1. 分段功率：
 - {lamp_power}W × {t1_pct}% = {p1_real:.1f}W
 - {lamp_power}W × {t2_pct}% = {p2_real:.1f}W
@@ -140,14 +140,14 @@ formula_text = f"""
 
 st.markdown(f"""
 <div class="result-box">
-<h3>📐 计算公式</h3>
+<h3>计算公式</h3>
 {formula_text}
 </div>
 """, unsafe_allow_html=True)
 
 st.markdown("---")
 
-# ===================== 【新增4】专业标书报告 =====================
+# ===================== 专业标书报告 =====================
 report = f"""
 太阳能路灯配置测算报告
 
@@ -175,26 +175,22 @@ report = f"""
 """
 
 if actual_backup_days >= cloudy_days and panel_daily_charge_wh >= daily_consume_wh:
-    report += "✅ 配置完全满足要求！"
+    report += "配置完全满足要求！"
 elif actual_backup_days >= cloudy_days:
-    report += f"⚠️ 续航足够，充电不足 → 建议太阳能板≥{need_panel_whp:.0f}Wp"
+    report += f"续航足够，充电不足 → 建议太阳能板≥{need_panel_whp:.0f}Wp"
 elif panel_daily_charge_wh >= daily_consume_wh:
-    report += f"⚠️ 充电足够，续航不足 → 建议电池≥{need_batt_ah:.0f}Ah"
+    report += f"充电足够，续航不足 → 建议电池≥{need_batt_ah:.0f}Ah"
 else:
-    report += f"❌ 需升级：太阳能板≥{need_panel_whp:.0f}Wp + 电池≥{need_batt_ah:.0f}Ah"
+    report += f"需升级：太阳能板≥{need_panel_whp:.0f}Wp + 电池≥{need_batt_ah:.0f}Ah"
 
-# ===================== 【新增3】一键复制报告 =====================
-st.subheader("📄 标书专用正式报告")
+# 报告显示与下载
+st.subheader("标书专用正式报告")
 st.code(report, language="")
-st.markdown("👇 点下面按钮复制报告")
-st.button📋 "复制报告"
-st.markdown("""
-<script>
-function copyReport() {
-    const text = document.querySelector('pre').innerText;
-    navigator.clipboard.writeText(text);
-    alert('✅ 复制成功！');
-}
-</script>
-<button onclick="copyReport()" style="background-color:#4c84ff; color:white; padding:10px 20px; border:none; border-radius:8px; cursor:pointer;">📋 一键复制报告</button>
-""", unsafe_allow_html=True)
+
+# 一键下载报告
+st.download_button(
+    label="下载报告（TXT文件）",
+    data=report,
+    file_name="太阳能路灯配置测算报告.txt",
+    mime="text/plain"
+)
